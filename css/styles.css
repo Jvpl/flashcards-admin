@@ -683,6 +683,53 @@ body {
   padding-top: 12px;
 }
 
+/* Edit Card Modal (tela cheia) */
+.edit-card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.edit-card-modal {
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.2s ease;
+}
+
+.edit-card-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.edit-card-modal-header h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.edit-card-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.edit-card-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--bg-tertiary);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 /* Firebase Management */
 .fb-deck {
   background-color: var(--bg-secondary);

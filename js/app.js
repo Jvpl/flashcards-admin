@@ -943,6 +943,58 @@ async function deleteCardFromFirebase(deckId, subjectId, cardId) {
   }
 }
 
+function htmlToLatexSource(html) {
+  if (!html) return '';
+  const hasHtml = /<[a-z][\s\S]*>/i.test(html);
+  if (!hasHtml) return html;
+
+  const div = document.createElement('div');
+  div.innerHTML = html;
+
+  div.querySelectorAll('.math-atom[data-latex]').forEach(el => {
+    const latex = el.getAttribute('data-latex');
+    const isDisplay = el.getAttribute('data-display') === 'true';
+    el.replaceWith(document.createTextNode(isDisplay ? `$$${latex}$$` : `$${latex}$`));
+  });
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = div.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '')
+    .replace(/<p>/gi, '')
+    .replace(/<[^>]+>/g, '');
+  return textarea.value.trim();
+}
+
+function updateEditPreview() {
+  renderMathField('editCardQuestion', 'preview-editCardQuestion');
+  renderMathField('editCardAnswer', 'preview-editCardAnswer');
+}
+
+function renderMathField(fieldId, previewId) {
+  const textarea = document.getElementById(fieldId);
+  const preview = document.getElementById(previewId);
+  if (!textarea || !preview) return;
+  const text = textarea.value;
+  if (!text.trim()) { preview.innerHTML = ''; return; }
+
+  let html = text
+    .replace(/\$\$([\s\S]*?)\$\$/g, '<div class="math-block" data-formula="$1">$$...$$</div>')
+    .replace(/\$([\s\S]*?)\$/g, '<span class="math-inline" data-formula="$1">$...$</span>')
+    .replace(/\n/g, '<br>');
+
+  preview.innerHTML = html;
+
+  if (typeof katex !== 'undefined') {
+    preview.querySelectorAll('.math-block, .math-inline').forEach(el => {
+      const formula = el.getAttribute('data-formula');
+      try {
+        katex.render(formula, el, { displayMode: el.classList.contains('math-block') });
+      } catch (e) {}
+    });
+  }
+}
+
 function openEditCardModal(deckId, subjectId, cardId) {
   const deck = firebaseDecks.find(d => d.id === deckId);
   const subject = deck?.subjects?.find(s => s.id === subjectId);
@@ -951,13 +1003,22 @@ function openEditCardModal(deckId, subjectId, cardId) {
 
   editingCard = { deckId, subjectId, cardId };
   document.getElementById('editCardContext').textContent = `${deck.name} › ${subject.name}`;
-  document.getElementById('editCardQuestion').value = card.question || '';
-  document.getElementById('editCardAnswer').value = card.answer || '';
+  document.getElementById('editCardQuestion').value = htmlToLatexSource(card.question || '');
+  document.getElementById('editCardAnswer').value = htmlToLatexSource(card.answer || '');
+  document.getElementById('preview-editCardQuestion').innerHTML = '';
+  document.getElementById('preview-editCardAnswer').innerHTML = '';
   document.getElementById('editCardModal').style.display = 'flex';
+
+  document.getElementById('editCardQuestion').oninput = updateEditPreview;
+  document.getElementById('editCardAnswer').oninput = updateEditPreview;
+  updateEditPreview();
 }
 
 function closeEditCardModal() {
   document.getElementById('editCardModal').style.display = 'none';
+  document.getElementById('editCardQuestion').oninput = null;
+  document.getElementById('editCardAnswer').oninput = null;
+  closeMathKeyboard();
   editingCard = null;
 }
 
@@ -968,8 +1029,8 @@ function handleEditModalOverlayClick(e) {
 async function saveEditedCard() {
   if (!editingCard) return;
   const { deckId, subjectId, cardId } = editingCard;
-  const question = document.getElementById('editCardQuestion').value;
-  const answer = document.getElementById('editCardAnswer').value;
+  const question = convertLatexToHtml(document.getElementById('editCardQuestion').value.trim());
+  const answer = convertLatexToHtml(document.getElementById('editCardAnswer').value.trim());
 
   const deck = firebaseDecks.find(d => d.id === deckId);
   const subject = deck?.subjects?.find(s => s.id === subjectId);

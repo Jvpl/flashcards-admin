@@ -161,3 +161,49 @@ async function deleteDeckInFirebase(deckId) {
     return { success: false, error: e.message };
   }
 }
+
+/**
+ * Salvar produto em /products/{deckId}
+ */
+async function saveProductInFirebase(deckId, productData) {
+  try {
+    if (!db) await initFirebase();
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+    await setDoc(doc(db, 'products', deckId), {
+      ...productData,
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (e) {
+    console.error('Erro ao salvar produto:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Remove produtos em /products cujos decks nao existem mais em /decks
+ */
+async function _cleanOrphanedProductsFirebase() {
+  try {
+    if (!db) await initFirebase();
+    const { collection, getDocs, doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+    const productsSnap = await getDocs(collection(db, 'products'));
+    const removed = [];
+    const errors = [];
+    for (const productDoc of productsSnap.docs) {
+      const product = productDoc.data();
+      const deckId = product.deckId || productDoc.id;
+      const deckSnap = await getDoc(doc(db, 'decks', deckId));
+      if (!deckSnap.exists()) {
+        try {
+          await deleteDoc(doc(db, 'products', productDoc.id));
+          removed.push(product.name || productDoc.id);
+        } catch (e) { errors.push(productDoc.id); }
+      }
+    }
+    return { success: true, removed, errors };
+  } catch (e) {
+    console.error('Erro ao limpar produtos orfaos:', e);
+    return { success: false, error: e.message };
+  }
+}

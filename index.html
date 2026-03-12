@@ -20,8 +20,7 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('criar')">➕ Criar Card</button>
-      <button class="tab-btn" onclick="switchTab('upload')">📤 Upload em Lote</button>
-      <button class="tab-btn" onclick="switchTab('preview')">👀 Preview</button>
+      <button class="tab-btn" id="rascunhosTabBtn" onclick="switchTab('rascunhos')">📋 Rascunhos</button>
       <button class="tab-btn" onclick="switchTab('gerenciar')">🗂️ Gerenciar</button>
     </div>
 
@@ -37,6 +36,18 @@
           <button type="button" class="btn btn-primary" onclick="addSubject()" style="white-space:nowrap;">+ Criar Matéria</button>
         </div>
         <div id="subjectsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+
+      <!-- Seção: Adicionar a Deck Existente -->
+      <div class="form-container">
+        <h3 style="color: var(--accent); margin-bottom: 16px; font-size: 15px;">➕ Adicionar a Deck Existente</h3>
+        <div style="display: flex; gap: 10px;">
+          <select id="firebaseSubjectSelect" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Selecione um deck do Firebase --</option>
+          </select>
+          <button type="button" class="btn btn-primary" onclick="loadFirebaseSubjectsForAdding()" style="white-space:nowrap;">🔄 Carregar</button>
+          <button type="button" class="btn" onclick="addToFirebaseSubject()" style="white-space:nowrap; background:#10b981; color:#fff;">✓ Usar</button>
+        </div>
       </div>
 
       <form id="cardForm" class="form-container">
@@ -56,12 +67,6 @@
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('frente')" title="Teclado matemático">
               ∑ Math
             </button>
-            <button type="button" class="toolbar-btn" onclick="insertBold('frente')" title="Negrito">
-              <strong>B</strong>
-            </button>
-            <button type="button" class="toolbar-btn" onclick="insertItalic('frente')" title="Itálico">
-              <i>I</i>
-            </button>
           </div>
           <textarea id="frente" class="editor" placeholder="Digite a pergunta... Use $...$ para fórmulas inline ou $$...$$ para fórmulas em bloco" required></textarea>
           <div class="preview" id="preview-frente"></div>
@@ -74,12 +79,6 @@
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('verso')" title="Teclado matemático">
               ∑ Math
             </button>
-            <button type="button" class="toolbar-btn" onclick="insertBold('verso')" title="Negrito">
-              <strong>B</strong>
-            </button>
-            <button type="button" class="toolbar-btn" onclick="insertItalic('verso')" title="Itálico">
-              <i>I</i>
-            </button>
           </div>
           <textarea id="verso" class="editor" placeholder="Digite a resposta... Use $...$ para fórmulas inline ou $$...$$ para fórmulas em bloco" required></textarea>
           <div class="preview" id="preview-verso"></div>
@@ -91,72 +90,33 @@
           <button type="button" class="btn btn-primary" onclick="addCard()">Adicionar Card</button>
         </div>
       </form>
-
-      <!-- Cards Adicionados -->
-      <div id="cardsAdicionados" class="cards-list"></div>
     </div>
 
-    <!-- TAB 2: Upload em Lote -->
-    <div id="upload" class="tab-content">
-      <div class="upload-container">
-        <h3>Upload de arquivo JSON</h3>
-
-        <div class="upload-area" id="uploadArea">
-          <input type="file" id="jsonFile" accept=".json" style="display: none">
-          <p>Arraste um arquivo JSON aqui ou clique para selecionar</p>
-          <small>Formato esperado: [{ concurso, materia, frente, verso }, ...]</small>
-        </div>
-
-        <div id="uploadPreview" style="display: none;">
-          <h4>Cards a serem importados:</h4>
-          <div id="uploadCardsList"></div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="cancelUpload()">Cancelar</button>
-            <button type="button" class="btn btn-primary" onclick="importCards()">Importar Cards</button>
+    <!-- TAB 2: Rascunhos -->
+    <div id="rascunhos" class="tab-content">
+      <div class="form-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <h3 style="color:var(--accent); font-size:15px;">📋 Cards em Rascunho</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-success" id="uploadBtn" onclick="uploadToFirebase()">☁️ Subir para Firebase</button>
+            <button class="btn btn-secondary" id="exportBtn" onclick="exportJson()">📥 Baixar JSON</button>
           </div>
         </div>
-
-        <!-- Exemplo de JSON -->
-        <div class="info-box">
-          <h4>Exemplo de formato JSON:</h4>
-          <pre><code>[
-  {
-    "concurso": "INSS 2025",
-    "materia": "Português",
-    "frente": "O que é um verbo?",
-    "verso": "Verbo é a classe de palavras que exprime ação, estado ou fenômeno."
-  },
-  {
-    "concurso": "INSS 2025",
-    "materia": "Matemática",
-    "frente": "Quanto é $2^3$?",
-    "verso": "$2^3 = 8$"
-  }
-]</code></pre>
+        <div id="cardsAdicionados" class="cards-list">
+          <p style="color:var(--text-secondary); text-align:center; padding:30px;">Nenhum card em rascunho.<br>Vá para ➕ Criar Card para adicionar.</p>
         </div>
       </div>
     </div>
 
-    <!-- TAB 3: Preview -->
-    <div id="preview" class="tab-content">
-      <div class="preview-container">
-        <h3>Preview dos Cards</h3>
-
-        <div class="filters">
-          <input type="text" id="filterConcurso" placeholder="Filtrar por concurso..." class="filter-input">
-          <input type="text" id="filterMateria" placeholder="Filtrar por matéria..." class="filter-input">
-        </div>
-
-        <div id="previewCards" class="cards-grid"></div>
-      </div>
-    </div>
-
-    <!-- TAB 4: Gerenciar Firebase -->
+    <!-- TAB 3: Gerenciar Firebase -->
     <div id="gerenciar" class="tab-content">
       <div class="form-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
           <h3 style="color:var(--accent); font-size:15px;">🗂️ Decks no Firebase</h3>
-          <button class="btn btn-primary" onclick="loadFirebaseDecks()" id="loadDecksBtn">🔄 Carregar do Firebase</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="loadFirebaseDecks()" id="loadDecksBtn">🔄 Carregar do Firebase</button>
+            <button class="btn" onclick="cleanOrphanedProducts()" style="background:#e67e22; color:#fff;" title="Remove produtos da Loja cujos decks foram apagados">🧹 Limpar Loja</button>
+          </div>
         </div>
         <div id="firebaseDecksContainer">
           <p style="color:var(--text-secondary); text-align:center; padding:20px;">Clique em "Carregar do Firebase" para ver os decks</p>
@@ -167,12 +127,9 @@
     <!-- Status -->
     <div id="statusBar" class="status-bar"></div>
 
-    <!-- Botão Salvar no Firebase -->
+    <!-- Rodapé -->
     <div class="footer">
-      <button class="btn btn-success" id="saveBtn" onclick="saveToFirebase()" style="display: none;">
-        📥 Exportar JSON
-      </button>
-      <p id="cardsCount" class="cards-count">0 cards adicionados</p>
+      <p id="cardsCount" class="cards-count">0 cards em rascunho</p>
     </div>
   </div>
 
@@ -255,8 +212,6 @@
           <label>Frente (Pergunta) *</label>
           <div class="editor-toolbar">
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('editCardQuestion')" title="Teclado matemático">∑ Math</button>
-            <button type="button" class="toolbar-btn" onclick="insertBold('editCardQuestion')" title="Negrito"><strong>B</strong></button>
-            <button type="button" class="toolbar-btn" onclick="insertItalic('editCardQuestion')" title="Itálico"><i>I</i></button>
           </div>
           <textarea id="editCardQuestion" class="editor" placeholder="Digite a pergunta... Use $...$ para fórmulas"></textarea>
           <div class="preview" id="preview-editCardQuestion"></div>
@@ -266,8 +221,6 @@
           <label>Verso (Resposta) *</label>
           <div class="editor-toolbar">
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('editCardAnswer')" title="Teclado matemático">∑ Math</button>
-            <button type="button" class="toolbar-btn" onclick="insertBold('editCardAnswer')" title="Negrito"><strong>B</strong></button>
-            <button type="button" class="toolbar-btn" onclick="insertItalic('editCardAnswer')" title="Itálico"><i>I</i></button>
           </div>
           <textarea id="editCardAnswer" class="editor" placeholder="Digite a resposta... Use $...$ para fórmulas"></textarea>
           <div class="preview" id="preview-editCardAnswer"></div>

@@ -3,7 +3,6 @@
 // ============================================
 
 let cardsData = []; // Array de cards criados
-let uploadedCards = []; // Cards para upload em lote
 let subjectsData = []; // Array de matérias criadas: { concurso, materia }
 let firebaseDecks = []; // Decks carregados do Firebase
 let editingCard = null; // { deckId, subjectId, cardId }
@@ -19,15 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-  // Upload de arquivo
-  const uploadArea = document.getElementById('uploadArea');
-  const jsonFile = document.getElementById('jsonFile');
-
-  uploadArea.addEventListener('click', () => jsonFile.click());
-  uploadArea.addEventListener('dragover', (e) => e.preventDefault());
-  uploadArea.addEventListener('drop', handleFileDrop);
-  jsonFile.addEventListener('change', handleFileSelect);
-
   // Live preview
   document.getElementById('frente').addEventListener('input', updatePreview);
   document.getElementById('verso').addEventListener('input', updatePreview);
@@ -52,10 +42,6 @@ function switchTab(tabName) {
   document.getElementById(tabName).classList.add('active');
   event.target.classList.add('active');
 
-  // Atualizar preview se necessário
-  if (tabName === 'preview') {
-    renderPreviewCards();
-  }
 }
 
 // ============================================
@@ -329,33 +315,6 @@ function insertMathKey(latex, cursorBack = 0) {
   updatePreview();
 }
 
-function insertBold(field) {
-  const textarea = document.getElementById(field);
-  const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-  const cursorPos = textarea.selectionStart;
-  const value = textarea.value;
-
-  if (selectedText) {
-    const newValue = value.slice(0, cursorPos) + `**${selectedText}**` + value.slice(cursorPos + selectedText.length);
-    textarea.value = newValue;
-  }
-
-  updatePreview();
-}
-
-function insertItalic(field) {
-  const textarea = document.getElementById(field);
-  const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-  const cursorPos = textarea.selectionStart;
-  const value = textarea.value;
-
-  if (selectedText) {
-    const newValue = value.slice(0, cursorPos) + `*${selectedText}*` + value.slice(cursorPos + selectedText.length);
-    textarea.value = newValue;
-  }
-
-  updatePreview();
-}
 
 function addCard() {
   const selectedKey = document.getElementById('materiaSelect').value;
@@ -398,36 +357,98 @@ function resetForm() {
   document.getElementById('preview-verso').innerHTML = '';
 }
 
+let draftCollapsedDecks = {};
+let draftCollapsedSubjects = {};
+
+function toggleDraftDeck(deckId) {
+  draftCollapsedDecks[deckId] = !draftCollapsedDecks[deckId];
+  renderCardsAdicionados();
+}
+
+function toggleDraftSubject(deckId, subjectId) {
+  const key = `${deckId}|${subjectId}`;
+  draftCollapsedSubjects[key] = !draftCollapsedSubjects[key];
+  renderCardsAdicionados();
+}
+
 function renderCardsAdicionados() {
   const container = document.getElementById('cardsAdicionados');
   container.innerHTML = '';
 
   if (cardsData.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding:30px;">Nenhum card em rascunho.<br>Vá para ➕ Criar Card para adicionar.</p>';
     return;
   }
 
-  const html = cardsData.map(card => `
-    <div class="card-item">
-      <div class="card-header">
-        <div>
-          <strong>${card.concurso}</strong> - ${card.materia}
+  const grouped = {};
+  cardsData.forEach(card => {
+    if (!grouped[card.concurso]) grouped[card.concurso] = {};
+    if (!grouped[card.concurso][card.materia]) grouped[card.concurso][card.materia] = [];
+    grouped[card.concurso][card.materia].push(card);
+  });
+
+  let html = '';
+  Object.keys(grouped).forEach(deck => {
+    const deckId = deck.toLowerCase().replace(/s+/g, '_');
+    const isCollapsed = draftCollapsedDecks[deckId] !== false;
+    const cardsCount = Object.values(grouped[deck]).reduce((sum, cards) => sum + cards.length, 0);
+    const icon = isCollapsed ? '▶' : '▼';
+    
+    html += `<div class="fb-deck" style="margin-bottom:12px;">
+      <div class="fb-deck-header" style="cursor:pointer; padding:10px 12px; background:var(--bg-secondary); border-radius:6px; font-weight:bold; display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:8px; flex:1; cursor:pointer;" onclick="toggleDraftDeck('${deckId}')">
+          <span style="width:20px;">${icon}</span>
+          <span>${deck} (${cardsCount} cards)</span>
         </div>
-        <div class="card-actions">
-          <button class="btn-edit" onclick="editCard(${card.id})">Editar</button>
-          <button class="btn-delete" onclick="deleteCardFromList(${card.id})">Deletar</button>
+        <div style="display:flex; gap:6px;">
+          
+          <button class="btn" style="padding:4px 8px; font-size:12px; background:#6366f1; color:#fff; border:none; border-radius:3px; cursor:pointer;" onclick="exportDeckToJson('${deck}')" title="Download JSON">📥</button>
         </div>
-      </div>
-      <div class="card-content">
-        <div class="card-content-label">Frente (Pergunta)</div>
-        <div class="card-content-text">${escapeHtml(card.frente)}</div>
-      </div>
-      <div class="card-content">
-        <div class="card-content-label">Verso (Resposta)</div>
-        <div class="card-content-text">${escapeHtml(card.verso)}</div>
-      </div>
-      <small style="color: #A0AEC0;">${card.createdAt}</small>
-    </div>
-  `).join('');
+      </div>`;
+    
+    if (!isCollapsed) {
+      Object.keys(grouped[deck]).forEach(subject => {
+        const subjectId = subject.toLowerCase().replace(/s+/g, '_');
+        const key = `${deckId}|${subjectId}`;
+        const isSubjectCollapsed = draftCollapsedSubjects[key] !== false;
+        const subjectCardsCount = grouped[deck][subject].length;
+        const subIcon = isSubjectCollapsed ? '▶' : '▼';
+        
+        html += `<div style="padding-left:20px; margin-top:8px;">
+          <div class="fb-subject-header" style="cursor:pointer; padding:8px 10px; background:var(--bg-tertiary); border-radius:4px; font-weight:500; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:8px; flex:1; cursor:pointer;" onclick="toggleDraftSubject('${deckId}', '${subjectId}')">
+              <span style="width:16px;">${subIcon}</span>
+              <span>${subject} (${subjectCardsCount})</span>
+            </div>
+            
+          </div>`;
+        
+        if (!isSubjectCollapsed) {
+          grouped[deck][subject].forEach(card => {
+            html += `<div class="card-item" style="margin-top:8px; margin-left:12px;">
+              <div class="card-header">
+                <div><strong>${card.materia}</strong></div>
+                <div class="card-actions" style="gap:4px;">
+                  <button class="btn-edit" onclick="editCard(${card.id})">Editar</button>
+                  <button class="btn-delete" onclick="deleteCardFromList(${card.id})">Deletar</button>
+                </div>
+              </div>
+              <div class="card-content" style="font-size:13px;">
+                <div class="card-content-label">Frente</div>
+                <div class="card-content-text" style="max-height:60px; overflow:hidden;">${escapeHtml(card.frente)}</div>
+              </div>
+              <div class="card-content" style="font-size:13px;">
+                <div class="card-content-label">Verso</div>
+                <div class="card-content-text" style="max-height:60px; overflow:hidden;">${escapeHtml(card.verso)}</div>
+              </div>
+            </div>`;
+          });
+        }
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
 
   container.innerHTML = html;
 }
@@ -441,150 +462,17 @@ function deleteCardFromList(cardId) {
 
 function editCard(cardId) {
   const card = cardsData.find(c => c.id === cardId);
-  if (card) {
-    document.getElementById('concurso').value = card.concurso;
-    document.getElementById('materia').value = card.materia;
-    document.getElementById('frente').value = card.frente;
-    document.getElementById('verso').value = card.verso;
-
-    deleteCardFromList(cardId);
-    updatePreview();
-    document.getElementById('concurso').focus();
-  }
-}
-
-// ============================================
-// UPLOAD EM LOTE
-// ============================================
-
-function handleFileDrop(e) {
-  e.preventDefault();
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    handleFileSelect({ target: { files } });
-  }
-}
-
-function handleFileSelect(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  if (!file.name.endsWith('.json')) {
-    showStatus('❌ Por favor, selecione um arquivo JSON', 'error');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      uploadedCards = JSON.parse(e.target.result);
-
-      if (!Array.isArray(uploadedCards)) {
-        throw new Error('Arquivo deve conter um array de objetos');
-      }
-
-      // Validar estrutura
-      uploadedCards.forEach(card => {
-        if (!card.concurso || !card.materia || !card.frente || !card.verso) {
-          throw new Error('Cada card deve ter: concurso, materia, frente, verso');
-        }
-      });
-
-      renderUploadPreview();
-      document.getElementById('uploadArea').style.display = 'none';
-      document.getElementById('uploadPreview').style.display = 'block';
-      showStatus(`✅ ${uploadedCards.length} cards carregados para importar`, 'success');
-
-    } catch (error) {
-      showStatus(`❌ Erro ao ler arquivo: ${error.message}`, 'error');
-      uploadedCards = [];
-    }
-  };
-
-  reader.readAsText(file);
-}
-
-function renderUploadPreview() {
-  const container = document.getElementById('uploadCardsList');
-  container.innerHTML = uploadedCards.map((card, idx) => `
-    <div class="card-item" style="margin-bottom: 12px;">
-      <div style="font-size: 12px; color: #A0AEC0; margin-bottom: 8px;">Card ${idx + 1}</div>
-      <strong>${card.concurso}</strong> - ${card.materia}
-      <div style="margin-top: 8px; font-size: 13px; color: #A0AEC0;">
-        <strong>Frente:</strong> ${escapeHtml(card.frente).substring(0, 100)}...
-      </div>
-      <div style="margin-top: 4px; font-size: 13px; color: #A0AEC0;">
-        <strong>Verso:</strong> ${escapeHtml(card.verso).substring(0, 100)}...
-      </div>
-    </div>
-  `).join('');
-}
-
-function cancelUpload() {
-  document.getElementById('uploadArea').style.display = 'block';
-  document.getElementById('uploadPreview').style.display = 'none';
-  document.getElementById('jsonFile').value = '';
-  uploadedCards = [];
-}
-
-async function importCards() {
-  if (uploadedCards.length === 0) {
-    showStatus('Nenhum card para importar', 'warning');
-    return;
-  }
-
-  cardsData = [...cardsData, ...uploadedCards.map(card => ({
-    id: Date.now() + Math.random(),
-    ...card,
-    createdAt: new Date().toLocaleString('pt-BR')
-  }))];
-
-  updateCardsCount();
-  renderCardsAdicionados();
-
-  document.getElementById('uploadArea').style.display = 'block';
-  document.getElementById('uploadPreview').style.display = 'none';
-  document.getElementById('jsonFile').value = '';
-  uploadedCards = [];
-
-  showStatus(`✅ ${uploadedCards.length} cards importados com sucesso!`, 'success');
-}
-
-// ============================================
-// PREVIEW
-// ============================================
-
-function renderPreviewCards() {
-  const container = document.getElementById('previewCards');
-  const filterConcurso = document.getElementById('filterConcurso').value.toLowerCase();
-  const filterMateria = document.getElementById('filterMateria').value.toLowerCase();
-
-  let filtered = cardsData.filter(card => {
-    const matchConcurso = card.concurso.toLowerCase().includes(filterConcurso);
-    const matchMateria = card.materia.toLowerCase().includes(filterMateria);
-    return matchConcurso && matchMateria;
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #A0AEC0;">Nenhum card encontrado</p>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(card => `
-    <div class="card-preview">
-      <div style="font-size: 11px; color: #A0AEC0; margin-bottom: 4px; text-transform: uppercase;">
-        ${card.concurso} • ${card.materia}
-      </div>
-      <div class="card-preview-front">
-        <div class="card-preview-label">Frente</div>
-        <div class="card-preview-content">${escapeHtml(card.frente)}</div>
-      </div>
-      <div class="card-preview-front">
-        <div class="card-preview-label">Verso</div>
-        <div class="card-preview-content">${escapeHtml(card.verso)}</div>
-      </div>
-    </div>
-  `).join('');
+  if (!card) return;
+  
+  document.getElementById('frente').value = card.frente;
+  document.getElementById('verso').value = card.verso;
+  document.getElementById('materiaSelect').value = `${card.concurso}|${card.materia}`;
+  
+  deleteCardFromList(cardId);
+  updatePreview();
+  switchTab('criar');
+  document.getElementById('frente').focus();
+  showStatus('Card carregado para editar', 'info');
 }
 
 // ============================================
@@ -634,66 +522,220 @@ return `<p>${result}</p>`;
 }
 
 // ============================================
-// SALVAR NO FIREBASE
+// SALVAR / EXPORTAR
 // ============================================
 
-async function saveToFirebase() {
-  if (cardsData.length === 0) {
-    showStatus('Adicione cards antes de salvar', 'warning');
+function buildDecksFromCards() {
+  const decksMap = {};
+  cardsData.forEach(card => {
+    const deckId = card.concurso.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const subjectId = card.materia.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!decksMap[deckId]) {
+      decksMap[deckId] = { id: deckId, name: card.concurso, subjects: {} };
+    }
+    if (!decksMap[deckId].subjects[subjectId]) {
+      decksMap[deckId].subjects[subjectId] = { id: subjectId, name: card.materia, flashcards: [] };
+    }
+    decksMap[deckId].subjects[subjectId].flashcards.push({
+      id: `${subjectId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      question: convertLatexToHtml(card.frente),
+      answer: convertLatexToHtml(card.verso),
+      level: 0,
+      points: 0,
+      lastReview: null,
+      nextReview: null
+    });
+  });
+  return Object.values(decksMap).map(deck => ({
+    ...deck,
+    subjects: Object.values(deck.subjects)
+  }));
+}
+
+async function uploadDeckToFirebase(deckName) {
+  const cardsToUpload = cardsData.filter(c => c.concurso === deckName);
+  if (cardsToUpload.length === 0) {
+    showStatus('Nenhum card nessa matéria', 'warning');
     return;
   }
-
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Gerando arquivo...';
-
-  showStatus('Gerando arquivo JSON para download...', 'warning');
-
+  
+  if (!confirm(`Subir ${cardsToUpload.length} card(s) do deck "${deckName}" para o Firebase?`)) return;
+  showStatus('Enviando matéria...', 'warning');
+  
   try {
-    // Agrupar cards por concurso → matéria (formato esperado pelo app)
     const decksMap = {};
-
-    cardsData.forEach(card => {
-      const deckId = card.concurso.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-      const subjectId = card.materia.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-
-      if (!decksMap[deckId]) {
-        decksMap[deckId] = {
-          id: deckId,
-          name: card.concurso,
-          subjects: {}
-        };
-      }
-
-      if (!decksMap[deckId].subjects[subjectId]) {
-        decksMap[deckId].subjects[subjectId] = {
-          id: subjectId,
-          name: card.materia,
-          flashcards: []
-        };
-      }
-
+    cardsToUpload.forEach(card => {
+      const deckId = card.concurso.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      const subjectId = card.materia.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      if (!decksMap[deckId]) decksMap[deckId] = { id: deckId, name: card.concurso, subjects: {} };
+      if (!decksMap[deckId].subjects[subjectId]) decksMap[deckId].subjects[subjectId] = { id: subjectId, name: card.materia, flashcards: [] };
       decksMap[deckId].subjects[subjectId].flashcards.push({
         id: `${subjectId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         question: convertLatexToHtml(card.frente),
         answer: convertLatexToHtml(card.verso),
-        level: 0,
-        points: 0,
-        lastReview: null,
-        nextReview: null
+        level: 0, points: 0
       });
     });
+    
+    for (const deckId in decksMap) {
+      const subjects = Object.values(decksMap[deckId].subjects);
+      await updateDeckInFirebase(deckId, { name: decksMap[deckId].name, subjects });
+      const totalCards = subjects.reduce((sum, s) => sum + (s.flashcards || []).length, 0);
+      await saveProductInFirebase(deckId, {
+        id: deckId, deckId, name: decksMap[deckId].name,
+        description: 'Deck de flashcards para concursos',
+        type: 'full', price: 0,
+        subjectCount: subjects.length, cardCount: totalCards
+      });
+    }
+    
+    cardsData = cardsData.filter(c => c.concurso !== deckName);
+    renderCardsAdicionados();
+    updateCardsCount();
+    showStatus(`✅ Deck "${deckName}" enviado para o Firebase!`, 'success');
+  } catch (error) {
+    console.error(error);
+    showStatus(`❌ Erro: ${error.message}`, 'error');
+  }
+}
 
-    // Converter para array final
-    const decks = Object.values(decksMap).map(deck => ({
-      ...deck,
-      subjects: Object.values(deck.subjects)
-    }));
 
-    const jsonData = JSON.stringify(decks, null, 2);
+async function exportDeckToJson(deckName) {
+  const cardsToExport = cardsData.filter(c => c.concurso === deckName);
+  if (cardsToExport.length === 0) {
+    showStatus('Nenhum card nesse deck', 'warning');
+    return;
+  }
+  
+  const decksMap = {};
+  cardsToExport.forEach(card => {
+    const deckId = card.concurso.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const subjectId = card.materia.toLowerCase().replace(/s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!decksMap[deckId]) decksMap[deckId] = { id: deckId, name: card.concurso, subjects: {} };
+    if (!decksMap[deckId].subjects[subjectId]) decksMap[deckId].subjects[subjectId] = { id: subjectId, name: card.materia, flashcards: [] };
+    decksMap[deckId].subjects[subjectId].flashcards.push({
+      id: `${subjectId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      question: convertLatexToHtml(card.frente),
+      answer: convertLatexToHtml(card.verso),
+      level: 0, points: 0
+    });
+  });
+  
+  const jsonData = Object.values(decksMap);
+  const dataStr = JSON.stringify(jsonData, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${deckName.toLowerCase().replace(/s+/g, '_')}_cards.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showStatus(`✅ ${cardsToExport.length} card(s) exportados!`, 'success');
+}
 
-    // Download
-    const blob = new Blob([jsonData], { type: 'application/json' });
+
+async function loadFirebaseSubjectsForAdding() {
+  showStatus('Carregando decks do Firebase...', 'warning');
+  const decks = await loadAllDecks();
+  const select = document.getElementById('firebaseSubjectSelect');
+  select.innerHTML = '<option value="">-- Selecione um deck do Firebase --</option>';
+  
+  decks.forEach(deck => {
+    if (deck.subjects && deck.subjects.length > 0) {
+      deck.subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = `${deck.name}|${subject.name}`;
+        option.textContent = `${deck.name} › ${subject.name}`;
+        select.appendChild(option);
+      });
+    }
+  });
+  
+  showStatus(`✅ ${decks.length} deck(s) carregado(s)`, 'success');
+}
+
+function addToFirebaseSubject() {
+  const select = document.getElementById('firebaseSubjectSelect');
+  if (!select.value) {
+    showStatus('Selecione um deck do Firebase', 'warning');
+    return;
+  }
+  
+  document.getElementById('materiaSelect').value = select.value;
+  select.value = '';
+  showStatus('Matéria selecionada! Agora preencha frente e verso para adicionar cards.', 'info');
+  document.getElementById('frente').focus();
+}
+
+async function uploadToFirebase() {
+  if (cardsData.length === 0) {
+    showStatus('Adicione cards antes de salvar', 'warning');
+    return;
+  }
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
+  showStatus('Enviando para o Firebase...', 'warning');
+  try {
+    const newDecks = buildDecksFromCards();
+    const existingDecks = await loadAllDecks();
+    for (const newDeck of newDecks) {
+      const existing = existingDecks.find(d => d.id === newDeck.id);
+      let deckToSave;
+      if (existing) {
+        for (const newSubject of newDeck.subjects) {
+          const existingSubject = (existing.subjects || []).find(s => s.id === newSubject.id);
+          if (existingSubject) {
+            existingSubject.flashcards = [...(existingSubject.flashcards || []), ...newSubject.flashcards];
+          } else {
+            existing.subjects = [...(existing.subjects || []), newSubject];
+          }
+        }
+        deckToSave = existing;
+      } else {
+        deckToSave = newDeck;
+      }
+      await updateDeckInFirebase(deckToSave.id, { name: deckToSave.name, subjects: deckToSave.subjects });
+      // Criar/atualizar produto para aparecer na Loja
+      const totalCards = (deckToSave.subjects || []).reduce((acc, s) => acc + (s.flashcards || []).length, 0);
+      await saveProductInFirebase(deckToSave.id, {
+        id: deckToSave.id,
+        deckId: deckToSave.id,
+        name: deckToSave.name,
+        description: 'Deck de flashcards para concursos',
+        type: 'full',
+        price: 0,
+        subjectCount: (deckToSave.subjects || []).length,
+        cardCount: totalCards
+      });
+    }
+    const total = cardsData.length;
+    cardsData = [];
+    renderCardsAdicionados();
+    updateCardsCount();
+    showStatus(`✅ ${total} card(s) enviado(s) para o Firebase!`, 'success');
+  } catch (error) {
+    showStatus(`❌ Erro ao enviar: ${error.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '☁️ Salvar no Firebase';
+  }
+}
+
+async function exportJson() {
+  if (cardsData.length === 0) {
+    showStatus('Adicione cards antes de exportar', 'warning');
+    return;
+  }
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  try {
+    const decks = buildDecksFromCards();
+    const blob = new Blob([JSON.stringify(decks, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -702,17 +744,9 @@ async function saveToFirebase() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
-    const totalCards = cardsData.length;
-    showStatus(`✅ ${totalCards} cards exportados no formato do app!`, 'success');
-    console.log('JSON exportado:', decks);
-    cardsData = [];
-    renderCardsAdicionados();
-    updateCardsCount();
-
+    showStatus(`✅ ${cardsData.length} card(s) exportados!`, 'success');
   } catch (error) {
-    showStatus(`❌ Erro ao gerar arquivo: ${error.message}`, 'error');
-    console.error('Erro:', error);
+    showStatus(`❌ Erro ao exportar: ${error.message}`, 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = '📥 Exportar JSON';
@@ -725,11 +759,14 @@ async function saveToFirebase() {
 
 function updateCardsCount() {
   const count = cardsData.length;
-  const text = count === 1 ? 'card adicionado' : 'cards adicionados';
-  document.getElementById('cardsCount').textContent = `${count} ${text}`;
-
-  const saveBtn = document.getElementById('saveBtn');
-  saveBtn.style.display = count > 0 ? 'block' : 'none';
+  const tabBtn = document.getElementById('rascunhosTabBtn');
+  if (tabBtn) tabBtn.textContent = count > 0 ? `📋 Rascunhos (${count})` : '📋 Rascunhos';
+  const countEl = document.getElementById('cardsCount');
+  if (countEl) countEl.textContent = count === 0 ? '0 cards em rascunho' : `${count} card(s) em rascunho`;
+  const uploadBtn = document.getElementById('uploadBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  if (uploadBtn) uploadBtn.disabled = count === 0;
+  if (exportBtn) exportBtn.disabled = count === 0;
 }
 
 function showStatus(message, type = 'info') {
@@ -748,11 +785,6 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Atualizar preview ao filtrar
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('filterConcurso')?.addEventListener('input', renderPreviewCards);
-  document.getElementById('filterMateria')?.addEventListener('input', renderPreviewCards);
-});
 
 // ============================================
 // GERENCIAR FIREBASE
@@ -1050,5 +1082,17 @@ async function saveEditedCard() {
     showStatus('✅ Card atualizado no Firebase!', 'success');
   } else {
     showStatus(`❌ Erro ao salvar: ${result.error}`, 'error');
+  }
+}
+
+async function cleanOrphanedProducts() {
+  if (!confirm('Isso vai remover da Loja todos os produtos cujos decks foram apagados. Continuar?')) return;
+  showStatus('Verificando produtos...');
+  const result = await _cleanOrphanedProductsFirebase();
+  if (!result.success) { showStatus('Erro: ' + result.error, 'error'); return; }
+  if (result.removed.length === 0) {
+    showStatus('Nenhum produto orfao encontrado.', 'success');
+  } else {
+    showStatus('Removidos da Loja: ' + result.removed.join(', '), 'success');
   }
 }

@@ -1,0 +1,25 @@
+{
+  "name": "flashcards-admin",
+  "version": "1.0.0",
+  "description": "Painel administrativo para criar e gerenciar flashcards para concursos públicos no Firebase",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server",
+    "dev": "npx http-server"
+  },
+  "keywords": [
+    "flashcards",
+    "concursos",
+    "educacao",
+    "admin",
+    "firebase"
+  ],
+  "author": "JVPL",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "firebase": "^12.10.0"
+  }
+}

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards Admin Panel</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- KaTeX para fórmulas matemáticas -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>📚 Flashcards Admin Panel</h1>
+      <p>Gerenciador de flashcards para concursos públicos</p>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('criar')">➕ Criar Card</button>
+      <button class="tab-btn" onclick="switchTab('upload')">📤 Upload em Lote</button>
+      <button class="tab-btn" onclick="switchTab('preview')">👀 Preview</button>
+      <button class="tab-btn" onclick="switchTab('gerenciar')">🗂️ Gerenciar</button>
+    </div>
+
+    <!-- TAB 1: Criar Card -->
+    <div id="criar" class="tab-content active">
+
+      <!-- Seção: Criar Matéria -->
+      <div class="form-container" id="subjectSection">
+        <h3 style="color: var(--accent); margin-bottom: 16px; font-size: 15px;">📁 Gerenciar Matérias</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <input type="text" id="novoConcurso" placeholder="Ex: INSS 2025" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+          <input type="text" id="novaMateria" placeholder="Ex: Matemática" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+          <button type="button" class="btn btn-primary" onclick="addSubject()" style="white-space:nowrap;">+ Criar Matéria</button>
+        </div>
+        <div id="subjectsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+
+      <form id="cardForm" class="form-container">
+
+        <!-- Dados do Card -->
+        <div class="form-group">
+          <label>Matéria *</label>
+          <select id="materiaSelect" style="width:100%; padding:12px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Selecione uma matéria --</option>
+          </select>
+        </div>
+
+        <!-- Editor Frente (Pergunta) -->
+        <div class="form-group">
+          <label>Frente (Pergunta) *</label>
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('frente')" title="Teclado matemático">
+              ∑ Math
+            </button>
+            <button type="button" class="toolbar-btn" onclick="insertBold('frente')" title="Negrito">
+              <strong>B</strong>
+            </button>
+            <button type="button" class="toolbar-btn" onclick="insertItalic('frente')" title="Itálico">
+              <i>I</i>
+            </button>
+          </div>
+          <textarea id="frente" class="editor" placeholder="Digite a pergunta... Use $...$ para fórmulas inline ou $$...$$ para fórmulas em bloco" required></textarea>
+          <div class="preview" id="preview-frente"></div>
+        </div>
+
+        <!-- Editor Verso (Resposta) -->
+        <div class="form-group">
+          <label>Verso (Resposta) *</label>
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('verso')" title="Teclado matemático">
+              ∑ Math
+            </button>
+            <button type="button" class="toolbar-btn" onclick="insertBold('verso')" title="Negrito">
+              <strong>B</strong>
+            </button>
+            <button type="button" class="toolbar-btn" onclick="insertItalic('verso')" title="Itálico">
+              <i>I</i>
+            </button>
+          </div>
+          <textarea id="verso" class="editor" placeholder="Digite a resposta... Use $...$ para fórmulas inline ou $$...$$ para fórmulas em bloco" required></textarea>
+          <div class="preview" id="preview-verso"></div>
+        </div>
+
+        <!-- Botões -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="resetForm()">Limpar</button>
+          <button type="button" class="btn btn-primary" onclick="addCard()">Adicionar Card</button>
+        </div>
+      </form>
+
+      <!-- Cards Adicionados -->
+      <div id="cardsAdicionados" class="cards-list"></div>
+    </div>
+
+    <!-- TAB 2: Upload em Lote -->
+    <div id="upload" class="tab-content">
+      <div class="upload-container">
+        <h3>Upload de arquivo JSON</h3>
+
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="jsonFile" accept=".json" style="display: none">
+          <p>Arraste um arquivo JSON aqui ou clique para selecionar</p>
+          <small>Formato esperado: [{ concurso, materia, frente, verso }, ...]</small>
+        </div>
+
+        <div id="uploadPreview" style="display: none;">
+          <h4>Cards a serem importados:</h4>
+          <div id="uploadCardsList"></div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="cancelUpload()">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="importCards()">Importar Cards</button>
+          </div>
+        </div>
+
+        <!-- Exemplo de JSON -->
+        <div class="info-box">
+          <h4>Exemplo de formato JSON:</h4>
+          <pre><code>[
+  {
+    "concurso": "INSS 2025",
+    "materia": "Português",
+    "frente": "O que é um verbo?",
+    "verso": "Verbo é a classe de palavras que exprime ação, estado ou fenômeno."
+  },
+  {
+    "concurso": "INSS 2025",
+    "materia": "Matemática",
+    "frente": "Quanto é $2^3$?",
+    "verso": "$2^3 = 8$"
+  }
+]</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Preview -->
+    <div id="preview" class="tab-content">
+      <div class="preview-container">
+        <h3>Preview dos Cards</h3>
+
+        <div class="filters">
+          <input type="text" id="filterConcurso" placeholder="Filtrar por concurso..." class="filter-input">
+          <input type="text" id="filterMateria" placeholder="Filtrar por matéria..." class="filter-input">
+        </div>
+
+        <div id="previewCards" class="cards-grid"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Gerenciar Firebase -->
+    <div id="gerenciar" class="tab-content">
+      <div class="form-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+          <h3 style="color:var(--accent); font-size:15px;">🗂️ Decks no Firebase</h3>
+          <button class="btn btn-primary" onclick="loadFirebaseDecks()" id="loadDecksBtn">🔄 Carregar do Firebase</button>
+        </div>
+        <div id="firebaseDecksContainer">
+          <p style="color:var(--text-secondary); text-align:center; padding:20px;">Clique em "Carregar do Firebase" para ver os decks</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="statusBar" class="status-bar"></div>
+
+    <!-- Botão Salvar no Firebase -->
+    <div class="footer">
+      <button class="btn btn-success" id="saveBtn" onclick="saveToFirebase()" style="display: none;">
+        📥 Exportar JSON
+      </button>
+      <p id="cardsCount" class="cards-count">0 cards adicionados</p>
+    </div>
+  </div>
+
+  <!-- Modal de Fórmula -->
+  <div id="mathModal" class="math-modal-overlay" style="display:none" onclick="handleModalOverlayClick(event)">
+    <div class="math-modal">
+      <h3 class="math-modal-title">Editar Fórmula</h3>
+
+      <!-- Preview ao vivo -->
+      <div id="mathModalPreview" class="math-modal-preview"></div>
+
+      <!-- Campos dinâmicos -->
+      <div id="mathModalFields"></div>
+
+      <!-- Mini teclado -->
+      <div class="math-modal-keyboard">
+        <div class="math-keyboard-row">
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pi')">π</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\theta')">θ</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\infty')">∞</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\times')">×</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\div')">÷</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\neq')">≠</button>
+        </div>
+        <div class="math-keyboard-row">
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt{}', 1)">√</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\geq')">≥</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\leq')">≤</button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('(')"> ( </button>
+          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(')')"> ) </button>
+        </div>
+      </div>
+
+      <button type="button" class="math-modal-btn math-modal-confirm" onclick="confirmMathModal()">Confirmar</button>
+      <button type="button" class="math-modal-btn math-modal-cancel" onclick="closeMathModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Teclado Matemático (compartilhado, movido pelo JS) -->
+  <div id="mathKeyboard" class="math-keyboard" style="display:none">
+    <div class="math-keyboard-header">
+      <button type="button" class="math-keyboard-close" onclick="closeMathKeyboard()">▼</button>
+    </div>
+    <div class="math-keyboard-row">
+      <button type="button" class="math-key" onclick="insertMathKey('+')">+</button>
+      <button type="button" class="math-key" onclick="insertMathKey('-')">−</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\times')">×</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\div')">÷</button>
+      <button type="button" class="math-key" onclick="insertMathKey('=')">=</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\neq')">≠</button>
+    </div>
+    <div class="math-keyboard-row">
+      <button type="button" class="math-key" onclick="openMathModal('pow')">x<sup>n</sup></button>
+      <button type="button" class="math-key" onclick="openMathModal('sqrt')">√</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\pi')">π</button>
+      <button type="button" class="math-key" onclick="insertMathKey('(')"> ( </button>
+      <button type="button" class="math-key" onclick="insertMathKey(')')"> ) </button>
+      <button type="button" class="math-key" onclick="openMathModal('frac')">a/b</button>
+    </div>
+    <div class="math-keyboard-row">
+      <button type="button" class="math-key" onclick="insertMathKey('\\log')">log</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\geq')">≥</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\leq')">≤</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\infty')">∞</button>
+      <button type="button" class="math-key" onclick="insertMathKey('\\theta')">θ</button>
+    </div>
+  </div>
+
+  <!-- Modal Editar Card do Firebase -->
+  <div id="editCardModal" class="math-modal-overlay" style="display:none" onclick="handleEditModalOverlayClick(event)">
+    <div class="math-modal" style="max-height:80vh; overflow-y:auto;">
+      <h3 class="math-modal-title">✏️ Editar Card</h3>
+      <div id="editCardContext" style="font-size:12px; color:var(--text-secondary); text-align:center; margin-bottom:16px;"></div>
+      <div class="math-modal-field">
+        <label>Pergunta (Frente)</label>
+        <textarea id="editCardQuestion" style="width:100%; min-height:120px; padding:12px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:13px; font-family:monospace; resize:vertical;"></textarea>
+      </div>
+      <div class="math-modal-field">
+        <label>Resposta (Verso)</label>
+        <textarea id="editCardAnswer" style="width:100%; min-height:120px; padding:12px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:13px; font-family:monospace; resize:vertical;"></textarea>
+      </div>
+      <button type="button" class="math-modal-btn math-modal-confirm" onclick="saveEditedCard()">💾 Salvar</button>
+      <button type="button" class="math-modal-btn math-modal-cancel" onclick="closeEditCardModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

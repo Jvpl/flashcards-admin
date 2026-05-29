@@ -30,12 +30,44 @@
       <!-- Seção: Criar Matéria -->
       <div class="form-container" id="subjectSection">
         <h3 style="color: var(--accent); margin-bottom: 16px; font-size: 15px;">📁 Gerenciar Matérias</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-          <input type="text" id="novoConcurso" placeholder="Ex: INSS 2025" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+          <select id="concursoSelect" onchange="onConcursoSelectChange()" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Selecione um deck --</option>
+            <option value="__novo__">＋ Novo deck...</option>
+          </select>
           <input type="text" id="novaMateria" placeholder="Ex: Matemática" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
           <button type="button" class="btn btn-primary" onclick="addSubject()" style="white-space:nowrap;">+ Criar Matéria</button>
         </div>
+        <div id="novoConcursoWrapper" style="display:none; margin-bottom:8px;">
+          <input type="text" id="novoConcurso" placeholder="Nome do novo deck (Ex: INSS 2025)" style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--accent); border-radius:8px; color:var(--text-primary); font-size:14px; box-sizing:border-box;">
+        </div>
+        <div id="deckCategoryWrapper" style="margin-bottom:8px;">
+          <select id="deckCategorySelect" onchange="onDeckCategoryChange()" style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Categoria do deck (opcional) --</option>
+            <option value="justica">⚖️ Justiça &amp; Direito</option>
+            <option value="seguranca">🛡️ Segurança Pública</option>
+            <option value="administrativo">💼 Administrativo</option>
+            <option value="operacional">🔧 Operacional &amp; Logística</option>
+            <option value="fiscal">📋 Fiscal &amp; Controle</option>
+            <option value="saude">🏥 Saúde</option>
+            <option value="educacao">📚 Educação</option>
+            <option value="militar">🎖️ Militar</option>
+          </select>
+        </div>
         <div id="subjectsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+
+      <!-- Seção: Gerenciar Assuntos -->
+      <div class="form-container" id="topicSection">
+        <h3 style="color: var(--accent); margin-bottom: 16px; font-size: 15px;">📂 Gerenciar Assuntos</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+          <select id="topicMateriaSelect" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Selecione uma matéria --</option>
+          </select>
+          <input type="text" id="novoAssunto" placeholder="Ex: Morfologia" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+          <button type="button" class="btn btn-primary" onclick="addTopic()" style="white-space:nowrap;">+ Criar Assunto</button>
+        </div>
+        <div id="topicsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
 
       <!-- Seção: Adicionar a Deck Existente -->
@@ -54,9 +86,9 @@
 
         <!-- Dados do Card -->
         <div class="form-group">
-          <label>Matéria *</label>
-          <select id="materiaSelect" style="width:100%; padding:12px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
-            <option value="">-- Selecione uma matéria --</option>
+          <label>Assunto *</label>
+          <select id="assuntoSelect" style="width:100%; padding:12px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+            <option value="">-- Selecione um assunto --</option>
           </select>
         </div>
 
@@ -95,12 +127,8 @@
     <!-- TAB 2: Rascunhos -->
     <div id="rascunhos" class="tab-content">
       <div class="form-container">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <div style="margin-bottom:16px;">
           <h3 style="color:var(--accent); font-size:15px;">📋 Cards em Rascunho</h3>
-          <div style="display:flex; gap:8px;">
-            <button class="btn btn-success" id="uploadBtn" onclick="uploadToFirebase()">☁️ Subir para Firebase</button>
-            <button class="btn btn-secondary" id="exportBtn" onclick="exportJson()">📥 Baixar JSON</button>
-          </div>
         </div>
         <div id="cardsAdicionados" class="cards-list">
           <p style="color:var(--text-secondary); text-align:center; padding:30px;">Nenhum card em rascunho.<br>Vá para ➕ Criar Card para adicionar.</p>
@@ -133,6 +161,39 @@
     </div>
   </div>
 
+  <!-- Modal Configuração da Loja -->
+  <div id="lojaConfigModal" class="math-modal-overlay" style="display:none" onclick="handleLojaConfigOverlayClick(event)">
+    <div class="math-modal" style="max-width:480px; width:100%;">
+      <h3 class="math-modal-title">⚙️ Configurar Loja</h3>
+      <p id="lojaConfigTitle" style="color:var(--accent); font-weight:700; margin-bottom:16px; font-size:15px;"></p>
+      <input type="hidden" id="lojaConfigDeckId">
+
+      <div class="loja-config-field">
+        <label>ID do Produto (Google Play Console)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="lojaConfigPlayStoreId" placeholder="Ex: deck_inss_2025" style="flex:1; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:13px; font-family:monospace;">
+          <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('lojaConfigPlayStoreId').value); showStatus('ID copiado!','success')" style="padding:10px 12px; background:var(--bg-tertiary); border:none; border-radius:8px; color:var(--text-primary); cursor:pointer; font-size:13px;" title="Copiar ID">📋</button>
+        </div>
+        <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">⚠️ Este ID deve ser cadastrado manualmente no Google Play Console com exatamente o mesmo valor.</p>
+      </div>
+
+      <div class="loja-config-field">
+        <label>Preço (R$) — 0 = Grátis</label>
+        <input type="number" id="lojaConfigPrice" min="0" step="0.01" placeholder="0.00" style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px;">
+      </div>
+
+      <div class="loja-config-field">
+        <label>Descrição</label>
+        <textarea id="lojaConfigDescription" rows="3" placeholder="Descrição do deck na loja..." style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--bg-tertiary); border-radius:8px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button type="button" class="math-modal-btn math-modal-confirm" onclick="saveLojaConfig()">💾 Salvar</button>
+        <button type="button" class="math-modal-btn math-modal-cancel" onclick="closeLojaConfigModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Fórmula -->
   <div id="mathModal" class="math-modal-overlay" style="display:none" onclick="handleModalOverlayClick(event)">
     <div class="math-modal">
@@ -147,56 +208,192 @@
       <!-- Mini teclado -->
       <div class="math-modal-keyboard">
         <div class="math-keyboard-row">
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pi')">π</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\theta')">θ</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\infty')">∞</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\times')">×</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\div')">÷</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\neq')">≠</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\log_{}', 1)">log<sub>n</sub></button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\frac{}{}', 1)">½ frac</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt{}', 1)">√</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt[]{}', 2)">√[n]</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\cdot')">·</button>
+          <button type="button" class="math-key math-key-del math-key-sm" onmousedown="event.preventDefault()" onclick="modalBackspace()">⌫</button>
         </div>
         <div class="math-keyboard-row">
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt{}', 1)">√</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\geq')">≥</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\leq')">≤</button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('(')"> ( </button>
-          <button type="button" class="math-key" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(')')"> ) </button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pi')">π</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\theta')">θ</button>
+          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\infty')">∞</button>
+          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\times')">×</button>
+          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('+')">+</button>
+          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('-')">−</button>
+          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('(')">(</button>
+          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(')')">)</button>
         </div>
       </div>
 
-      <button type="button" class="math-modal-btn math-modal-confirm" onclick="confirmMathModal()">Confirmar</button>
-      <button type="button" class="math-modal-btn math-modal-cancel" onclick="closeMathModal()">Cancelar</button>
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <button type="button" class="math-modal-btn math-modal-confirm" onclick="confirmMathModal()">Confirmar</button>
+        <button type="button" class="math-modal-btn math-modal-cancel" onclick="closeMathModal()">Cancelar</button>
+      </div>
     </div>
   </div>
 
-  <!-- Teclado Matemático (compartilhado, movido pelo JS) -->
+  <!-- Teclado Matemático Avançado (compartilhado, movido pelo JS) -->
   <div id="mathKeyboard" class="math-keyboard" style="display:none">
+
+    <!-- Cabeçalho: abas + fechar -->
     <div class="math-keyboard-header">
-      <button type="button" class="math-keyboard-close" onclick="closeMathKeyboard()">▼</button>
+      <div class="math-kb-tabs">
+        <button type="button" class="math-kb-tab active" data-tab="num" onclick="switchMathTab('num')">123</button>
+        <button type="button" class="math-kb-tab" data-tab="abc" onclick="switchMathTab('abc')">ABC</button>
+        <button type="button" class="math-kb-tab" data-tab="simbolos" onclick="switchMathTab('simbolos')">Símb</button>
+        <button type="button" class="math-kb-tab" data-tab="estruturas" onclick="switchMathTab('estruturas')">Estr</button>
+      </div>
+      <button type="button" class="math-keyboard-close" onclick="closeMathKeyboard()">▼ Fechar</button>
     </div>
-    <div class="math-keyboard-row">
-      <button type="button" class="math-key" onclick="insertMathKey('+')">+</button>
-      <button type="button" class="math-key" onclick="insertMathKey('-')">−</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\times')">×</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\div')">÷</button>
-      <button type="button" class="math-key" onclick="insertMathKey('=')">=</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\neq')">≠</button>
+
+    <!-- Preview ao vivo -->
+    <div id="kbPreview" class="math-kb-preview"></div>
+
+    <!-- Panel: Numérico -->
+    <div id="mathPanel-num" class="math-panel active">
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('7')">7</button>
+        <button type="button" class="math-key" onclick="insertMathKey('8')">8</button>
+        <button type="button" class="math-key" onclick="insertMathKey('9')">9</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('\\div')">÷</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('\\times')">×</button>
+        <button type="button" class="math-key math-key-del" onclick="mathKeyBackspace()">⌫</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('4')">4</button>
+        <button type="button" class="math-key" onclick="insertMathKey('5')">5</button>
+        <button type="button" class="math-key" onclick="insertMathKey('6')">6</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('-')">−</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('+')">+</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('=')">=</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('1')">1</button>
+        <button type="button" class="math-key" onclick="insertMathKey('2')">2</button>
+        <button type="button" class="math-key" onclick="insertMathKey('3')">3</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('(')">(</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey(')')">)</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('\\neq')">≠</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" style="flex:2" onclick="insertMathKey('0')">0</button>
+        <button type="button" class="math-key" onclick="insertMathKey('.')">.</button>
+        <button type="button" class="math-key" onclick="insertMathKey(',')">,</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('\\geq')">≥</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('\\leq')">≤</button>
+      </div>
     </div>
-    <div class="math-keyboard-row">
-      <button type="button" class="math-key" onclick="openMathModal('pow')">x<sup>n</sup></button>
-      <button type="button" class="math-key" onclick="openMathModal('sqrt')">√</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\pi')">π</button>
-      <button type="button" class="math-key" onclick="insertMathKey('(')"> ( </button>
-      <button type="button" class="math-key" onclick="insertMathKey(')')"> ) </button>
-      <button type="button" class="math-key" onclick="openMathModal('frac')">a/b</button>
+
+    <!-- Panel: ABC (QWERTY) -->
+    <div id="mathPanel-abc" class="math-panel">
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('q')">q</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('w')">w</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('e')">e</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('r')">r</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('t')">t</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('y')">y</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('u')">u</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('i')">i</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('o')">o</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('p')">p</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('a')">a</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('s')">s</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('d')">d</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('f')">f</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('g')">g</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('h')">h</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('j')">j</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('k')">k</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('l')">l</button>
+        <button type="button" class="math-key math-key-del" onclick="mathKeyBackspace()">⌫</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('z')">z</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('x')">x</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('c')">c</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('v')">v</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('b')">b</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('n')">n</button>
+        <button type="button" class="math-key math-key-sm" onclick="insertMathKey('m')">m</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('_')">_</button>
+        <button type="button" class="math-key" onclick="insertMathKey('^{}', 1)">x<sup>n</sup></button>
+        <button type="button" class="math-key" style="flex:3" onclick="insertMathKey(' ')">espaço</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('+')">+</button>
+        <button type="button" class="math-key math-key-op" onclick="insertMathKey('-')">−</button>
+      </div>
     </div>
-    <div class="math-keyboard-row">
-      <button type="button" class="math-key" onclick="insertMathKey('\\log')">log</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\geq')">≥</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\leq')">≤</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\infty')">∞</button>
-      <button type="button" class="math-key" onclick="insertMathKey('\\theta')">θ</button>
+
+    <!-- Panel: Símbolos -->
+    <div id="mathPanel-simbolos" class="math-panel">
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('\\pi')">π</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\theta')">θ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\alpha')">α</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\beta')">β</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\gamma')">γ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\delta')">δ</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('\\lambda')">λ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\mu')">μ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\sigma')">σ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\omega')">ω</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\phi')">φ</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\infty')">∞</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('\\approx')">≈</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\equiv')">≡</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\in')">∈</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\notin')">∉</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\subset')">⊂</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\cup')">∪</button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key" onclick="insertMathKey('\\cap')">∩</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\forall')">∀</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\exists')">∃</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\pm')">±</button>
+        <button type="button" class="math-key" onclick="insertMathKey('\\cdot')">·</button>
+        <button type="button" class="math-key math-key-del" onclick="mathKeyBackspace()">⌫</button>
+      </div>
     </div>
+
+    <!-- Panel: Estruturas -->
+    <div id="mathPanel-estruturas" class="math-panel">
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-struct" onclick="openMathModal('frac')">a/b<br><small>fração</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="openMathModal('sqrt')">√x<br><small>raiz</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="openMathModal('pow')">xⁿ<br><small>potência</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="openMathModal('log')">log<br><small>logaritmo</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\ln')">ln<br><small>natural</small></button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\sum_{i=0}^{n}')">Σ<br><small>somatório</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\prod_{i=0}^{n}')">Π<br><small>produtório</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\int_{a}^{b}')">∫<br><small>integral</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\lim_{x \\to 0}')">lim<br><small>limite</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\vec{}', 1)">→<br><small>vetor</small></button>
+      </div>
+      <div class="math-keyboard-row">
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\binom{n}{k}')">C(n,k)<br><small>combinação</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\left|\\right|', 7)">|x|<br><small>módulo</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\overline{}', 1)">x̅<br><small>média</small></button>
+        <button type="button" class="math-key math-key-struct" onclick="insertMathKey('\\hat{}', 1)">x̂<br><small>chapéu</small></button>
+        <button type="button" class="math-key math-key-del" onclick="mathKeyBackspace()">⌫<br><small>apagar</small></button>
+      </div>
+    </div>
+
+  </div>
+
   </div>
 
   <!-- Modal Editar Card do Firebase -->

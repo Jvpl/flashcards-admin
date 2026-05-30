@@ -65,6 +65,28 @@ function switchTab(tabName) {
 // EDITOR E PREVIEW
 // ============================================
 
+function applyFormat(fieldId, tag) {
+  const textarea = document.getElementById(fieldId);
+  if (!textarea) return;
+  const start    = textarea.selectionStart;
+  const end      = textarea.selectionEnd;
+  const value    = textarea.value;
+  const selected = value.slice(start, end);
+  const open     = `<${tag}>`;
+  const close    = `</${tag}>`;
+  const insertion = open + selected + close;
+  textarea.value = value.slice(0, start) + insertion + value.slice(end);
+  textarea.selectionStart = textarea.selectionEnd = selected
+    ? start + insertion.length
+    : start + open.length;
+  textarea.focus();
+  if (fieldId === 'frente' || fieldId === 'verso') {
+    updatePreview();
+  } else {
+    updateEditPreview();
+  }
+}
+
 function updatePreview() {
   renderMath('frente');
   renderMath('verso');
@@ -319,6 +341,7 @@ function openMathModal(type) {
     input.addEventListener('focus', () => { activeModalInput = input.id; });
   });
 
+  switchModalTab('ops');
   document.getElementById('mathModal').style.display = 'flex';
   const firstInput = document.getElementById(mathModalConfig.fields[0].id);
   firstInput.focus();
@@ -402,6 +425,15 @@ function modalBackspace() {
 
 function handleModalOverlayClick(e) {
   if (e.target === document.getElementById('mathModal')) closeMathModal();
+}
+
+function switchModalTab(name) {
+  document.querySelectorAll('.math-modal-kb-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.math-modal-panel').forEach(p => {
+    p.classList.toggle('active', p.id === `mathModalPanel-${name}`);
+  });
 }
 
 function switchMathTab(name) {
@@ -823,10 +855,36 @@ async function uploadDeckToFirebase(deckName) {
   const price      = priceInput && priceInput.value !== '' ? parseFloat(priceInput.value) : 0;
 
   if (!confirm(`Subir ${cardsToUpload.length} card(s) do deck "${deckName}" para o Firebase?\nPreço: R$ ${price.toFixed(2)}`)) return;
-  showStatus('Enviando...', 'warning');
+  showStatus('Verificando deck existente no Firebase...', 'warning');
 
   try {
+    const deckId   = slugify(deckName);
+    const category = deckCategories[deckName] || '';
+
+    // Carrega o deck existente do Firebase para mesclar (não substituir)
+    const allDecks    = await loadAllDecks();
+    const existingDeck = allDecks.find(d => d.id === deckId);
+
+    // Constrói o mapa de matérias a partir dos dados existentes no Firebase
     const subjectsMap = {};
+    if (existingDeck) {
+      (existingDeck.subjects || []).forEach(s => {
+        subjectsMap[s.id] = {
+          id: s.id, name: s.name,
+          flashcards: [...(s.flashcards || [])],
+          topics: {},
+        };
+        (s.topics || []).forEach(t => {
+          subjectsMap[s.id].topics[t.id] = {
+            id: t.id, name: t.name,
+            flashcards: [...(t.flashcards || [])],
+          };
+        });
+      });
+    }
+
+    // Adiciona os novos cards ao mapa (sem apagar os existentes)
+    showStatus('Enviando...', 'warning');
     cardsToUpload.forEach(card => {
       const subjectId = slugify(card.materia);
       const topicId   = card.assunto ? slugify(card.assunto) : null;
@@ -855,8 +913,6 @@ async function uploadDeckToFirebase(deckName) {
       topics: Object.values(s.topics || {}),
     }));
 
-    const deckId = slugify(deckName);
-    const category = deckCategories[deckName] || '';
     await updateDeckInFirebase(deckId, { name: deckName, category, subjects });
 
     const totalCards = subjects.reduce((sum, s) => {
@@ -877,7 +933,8 @@ async function uploadDeckToFirebase(deckName) {
     saveDrafts();
     renderCardsAdicionados();
     updateCardsCount();
-    showStatus(`✅ Deck "${deckName}" enviado para o Firebase! Preço: R$ ${price.toFixed(2)}`, 'success');
+    const action = existingDeck ? 'atualizado' : 'enviado';
+    showStatus(`✅ Deck "${deckName}" ${action} no Firebase! ${totalCards} cards • R$ ${price.toFixed(2)}`, 'success');
 
     if (firebaseDecks.length > 0) {
       [firebaseDecks, firebaseProducts] = await Promise.all([loadAllDecks(), loadAllProducts()]);
@@ -1369,7 +1426,7 @@ function htmlToLatexSource(html) {
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '')
     .replace(/<p>/gi, '')
-    .replace(/<[^>]+>/g, '');
+    .replace(/<(?!\/?(?:strong|em|mark)\b)[^>]+>/g, '');
   return textarea.value.trim();
 }
 

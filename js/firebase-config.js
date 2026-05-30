@@ -181,6 +181,23 @@ async function saveProductInFirebase(deckId, productData) {
 }
 
 /**
+ * Carregar todos os produtos de /products
+ */
+async function loadAllProducts() {
+  try {
+    if (!db) await initFirebase();
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+    const snap = await getDocs(collection(db, 'products'));
+    const products = {};
+    snap.forEach(doc => { products[doc.id] = { id: doc.id, ...doc.data() }; });
+    return products;
+  } catch (e) {
+    console.error('Erro ao carregar produtos:', e);
+    return {};
+  }
+}
+
+/**
  * Remove produtos em /products cujos decks nao existem mais em /decks
  */
 async function _cleanOrphanedProductsFirebase() {

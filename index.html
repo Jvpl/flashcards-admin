@@ -96,6 +96,9 @@
         <div class="form-group">
           <label>Frente (Pergunta) *</label>
           <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-bold" onclick="applyFormat('frente', 'strong')" title="Negrito"><b>B</b></button>
+            <button type="button" class="toolbar-btn toolbar-btn-italic" onclick="applyFormat('frente', 'em')" title="Itálico"><i>I</i></button>
+            <button type="button" class="toolbar-btn toolbar-btn-mark" onclick="applyFormat('frente', 'mark')" title="Marcador">M</button>
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('frente')" title="Teclado matemático">
               ∑ Math
             </button>
@@ -108,6 +111,9 @@
         <div class="form-group">
           <label>Verso (Resposta) *</label>
           <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-bold" onclick="applyFormat('verso', 'strong')" title="Negrito"><b>B</b></button>
+            <button type="button" class="toolbar-btn toolbar-btn-italic" onclick="applyFormat('verso', 'em')" title="Itálico"><i>I</i></button>
+            <button type="button" class="toolbar-btn toolbar-btn-mark" onclick="applyFormat('verso', 'mark')" title="Marcador">M</button>
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('verso')" title="Teclado matemático">
               ∑ Math
             </button>
@@ -205,26 +211,115 @@
       <!-- Campos dinâmicos -->
       <div id="mathModalFields"></div>
 
-      <!-- Mini teclado -->
+      <!-- Mini teclado com abas -->
       <div class="math-modal-keyboard">
-        <div class="math-keyboard-row">
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\log_{}', 1)">log<sub>n</sub></button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\frac{}{}', 1)">½ frac</button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt{}', 1)">√</button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt[]{}', 2)">√[n]</button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\cdot')">·</button>
-          <button type="button" class="math-key math-key-del math-key-sm" onmousedown="event.preventDefault()" onclick="modalBackspace()">⌫</button>
+        <div class="math-modal-kb-tabs">
+          <button type="button" class="math-modal-kb-tab active" data-tab="ops" onclick="switchModalTab('ops')">Ops</button>
+          <button type="button" class="math-modal-kb-tab" data-tab="simb" onclick="switchModalTab('simb')">Símb</button>
+          <button type="button" class="math-modal-kb-tab" data-tab="abc" onclick="switchModalTab('abc')">ABC</button>
         </div>
-        <div class="math-keyboard-row">
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pi')">π</button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\theta')">θ</button>
-          <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\infty')">∞</button>
-          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\times')">×</button>
-          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('+')">+</button>
-          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('-')">−</button>
-          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('(')">(</button>
-          <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(')')">)</button>
+
+        <!-- Panel: Operadores -->
+        <div id="mathModalPanel-ops" class="math-modal-panel active">
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\log_{}', 1)">log<sub>n</sub></button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\frac{}{}', 1)">½ frac</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt{}', 1)">√</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sqrt[]{}', 2)">√[n]</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\cdot')">·</button>
+            <button type="button" class="math-key math-key-del math-key-sm" onmousedown="event.preventDefault()" onclick="modalBackspace()">⌫</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pi')">π</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\theta')">θ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\infty')">∞</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\times')">×</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('+')">+</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('-')">−</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\pm')">±</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('(')">(</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(')')">)</button>
+          </div>
+        </div>
+
+        <!-- Panel: Símbolos -->
+        <div id="mathModalPanel-simb" class="math-modal-panel">
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Delta')">Δ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Sigma')">Σ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Pi')">Π</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Omega')">Ω</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Lambda')">Λ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\Theta')">Θ</button>
+            <button type="button" class="math-key math-key-del math-key-sm" onmousedown="event.preventDefault()" onclick="modalBackspace()">⌫</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\alpha')">α</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\beta')">β</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\gamma')">γ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\delta')">δ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\lambda')">λ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\mu')">μ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\sigma')">σ</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\omega')">ω</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\phi')">φ</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\approx')">≈</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\equiv')">≡</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\neq')">≠</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\geq')">≥</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\leq')">≤</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\in')">∈</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\cup')">∪</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\cap')">∩</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('\\forall')">∀</button>
+          </div>
+        </div>
+
+        <!-- Panel: ABC -->
+        <div id="mathModalPanel-abc" class="math-modal-panel">
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('q')">q</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('w')">w</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('e')">e</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('r')">r</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('t')">t</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('y')">y</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('u')">u</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('i')">i</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('o')">o</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('p')">p</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('a')">a</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('s')">s</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('d')">d</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('f')">f</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('g')">g</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('h')">h</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('j')">j</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('k')">k</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('l')">l</button>
+            <button type="button" class="math-key math-key-del math-key-sm" onmousedown="event.preventDefault()" onclick="modalBackspace()">⌫</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('z')">z</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('x')">x</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('c')">c</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('v')">v</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('b')">b</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('n')">n</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('m')">m</button>
+          </div>
+          <div class="math-keyboard-row">
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('_')">_</button>
+            <button type="button" class="math-key math-key-sm" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('^{}', 1)">x<sup>n</sup></button>
+            <button type="button" class="math-key math-key-sm" style="flex:3" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal(' ')">espaço</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('+')">+</button>
+            <button type="button" class="math-key math-key-sm math-key-op" onmousedown="event.preventDefault()" onclick="insertMathKeyInModal('-')">−</button>
+          </div>
         </div>
       </div>
 
@@ -408,6 +503,9 @@
         <div class="form-group">
           <label>Frente (Pergunta) *</label>
           <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-bold" onclick="applyFormat('editCardQuestion', 'strong')" title="Negrito"><b>B</b></button>
+            <button type="button" class="toolbar-btn toolbar-btn-italic" onclick="applyFormat('editCardQuestion', 'em')" title="Itálico"><i>I</i></button>
+            <button type="button" class="toolbar-btn toolbar-btn-mark" onclick="applyFormat('editCardQuestion', 'mark')" title="Marcador">M</button>
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('editCardQuestion')" title="Teclado matemático">∑ Math</button>
           </div>
           <textarea id="editCardQuestion" class="editor" placeholder="Digite a pergunta... Use $...$ para fórmulas"></textarea>
@@ -417,6 +515,9 @@
         <div class="form-group">
           <label>Verso (Resposta) *</label>
           <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn toolbar-btn-bold" onclick="applyFormat('editCardAnswer', 'strong')" title="Negrito"><b>B</b></button>
+            <button type="button" class="toolbar-btn toolbar-btn-italic" onclick="applyFormat('editCardAnswer', 'em')" title="Itálico"><i>I</i></button>
+            <button type="button" class="toolbar-btn toolbar-btn-mark" onclick="applyFormat('editCardAnswer', 'mark')" title="Marcador">M</button>
             <button type="button" class="toolbar-btn toolbar-btn-math" onclick="toggleMathKeyboard('editCardAnswer')" title="Teclado matemático">∑ Math</button>
           </div>
           <textarea id="editCardAnswer" class="editor" placeholder="Digite a resposta... Use $...$ para fórmulas"></textarea>

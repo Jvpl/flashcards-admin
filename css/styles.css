@@ -511,6 +511,54 @@ body {
   border-color: var(--accent);
 }
 
+/* Toolbar formatting buttons */
+.toolbar-btn-bold {
+  font-weight: 700;
+  font-size: 15px;
+}
+.toolbar-btn-italic {
+  font-style: italic;
+  font-size: 15px;
+}
+.toolbar-btn-mark {
+  background-color: #fef08a;
+  color: #713f12;
+  border-color: #eab308;
+}
+.toolbar-btn-mark:hover {
+  background-color: #fde047;
+  color: #713f12;
+}
+
+/* Modal keyboard tabs */
+.math-modal-kb-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.math-modal-kb-tab {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.math-modal-kb-tab.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.math-modal-panel {
+  display: none;
+}
+.math-modal-panel.active {
+  display: block;
+}
+
 /* Math Keyboard */
 .math-keyboard {
   background-color: var(--bg-secondary);
@@ -522,18 +570,49 @@ body {
 
 .math-keyboard-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 8px;
+  gap: 8px;
+}
+
+.math-kb-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.math-kb-tab {
+  padding: 5px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.math-kb-tab.active {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+}
+
+.math-kb-tab:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .math-keyboard-close {
   background-color: var(--bg-tertiary);
   border: none;
   color: var(--text-secondary);
-  padding: 4px 20px;
-  border-radius: 12px;
+  padding: 5px 12px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
   transition: color 0.2s ease;
 }
 
@@ -541,10 +620,41 @@ body {
   color: var(--text-primary);
 }
 
+/* Preview ao vivo dentro do teclado */
+.math-kb-preview {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-height: 42px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.kb-preview-placeholder {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Painéis do teclado */
+.math-panel {
+  display: none;
+}
+
+.math-panel.active {
+  display: block;
+}
+
 .math-keyboard-row {
   display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 5px;
+  margin-bottom: 5px;
 }
 
 .math-key {
@@ -559,6 +669,7 @@ body {
   transition: background-color 0.15s ease, color 0.15s ease;
   text-align: center;
   min-width: 0;
+  line-height: 1.2;
 }
 
 .math-key:hover {
@@ -571,20 +682,75 @@ body {
   transform: scale(0.93);
 }
 
+/* Teclas de operador: fundo ligeiramente diferente */
+.math-key-op {
+  background-color: #374151;
+}
+
+/* Tecla de apagar: vermelho suave */
+.math-key-del {
+  background-color: #5c2d2d;
+  color: #fc8181;
+  border-color: #744040;
+}
+
+.math-key-del:hover {
+  background-color: var(--error);
+  color: #fff;
+  border-color: var(--error);
+}
+
+/* Teclas menores (QWERTY) */
+.math-key-sm {
+  font-size: 13px;
+  padding: 8px 2px;
+}
+
+/* Teclas de estrutura: mais altas com label abaixo */
+.math-key-struct {
+  padding: 8px 4px;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.math-key-struct small {
+  display: block;
+  font-size: 9px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.math-key-struct:hover small {
+  color: var(--bg-primary);
+}
+
+/* Loja Config Modal */
+.loja-config-field {
+  margin-bottom: 16px;
+}
+
+.loja-config-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
 /* Math Modal */
 .math-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
 .math-modal {
   background-color: var(--bg-secondary);
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px;
   padding: 24px 20px 32px;
   width: 100%;
   max-width: 480px;
